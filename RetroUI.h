@@ -22,6 +22,7 @@ namespace RetroUI {
     static int CONSOLE_HEIGHT = 58;
     static int SIDEBAR_WIDTH = 60;
     static int CONTENT_WIDTH = CONSOLE_WIDTH - SIDEBAR_WIDTH;
+    static int sidebarPage = 0;
 
     const std::string RESET = "\033[0m";
     const std::string ORANGE = "\033[38;5;208m";      // Main Borders
@@ -184,12 +185,75 @@ namespace RetroUI {
         std::cout << ORANGE << "╠" << std::string(SIDEBAR_WIDTH - 2, '═') << "╣";
 
         // --- Sidebar Items ---
-        int y = 9;
+        // Parse Sidebar Data for Grid View
+        struct RoomGridItem { std::string id; bool free; std::string type; };
+        std::vector<RoomGridItem> rooms;
+        
         for(const auto& item : sidebar) {
-            if(y >= CONSOLE_HEIGHT - 30) break; // Reserve space for duck
-            gotoxy(sbX + 2, y++);
-            std::string color = (item.find("FREE") != std::string::npos) ? CYAN : RED;
-            std::cout << color << item.substr(0, SIDEBAR_WIDTH - 4) << RESET;
+            if (item.find(":") != std::string::npos) {
+                // Format: 101:FREE:Type
+                size_t firstColon = item.find(":");
+                size_t secondColon = item.find(":", firstColon + 1);
+                
+                std::string num = item.substr(0, firstColon);
+                bool isFree = item.find("FREE") != std::string::npos;
+                std::string typeStr = (secondColon != std::string::npos) ? item.substr(secondColon + 1) : "Simple";
+                
+                std::string typeCode = "Si";
+                if (typeStr == "Double") typeCode = "D";
+                else if (typeStr == "Suite") typeCode = "S";
+                else if (typeStr == "Presid.") typeCode = "P";
+                
+                rooms.push_back({num, isFree, typeCode});
+            }
+        }
+
+        // Pagination Logic
+        int itemsPerPage = 9;
+        int totalPages = (rooms.empty()) ? 1 : (rooms.size() + itemsPerPage - 1) / itemsPerPage;
+        if (sidebarPage >= totalPages) sidebarPage = totalPages - 1;
+        if (sidebarPage < 0) sidebarPage = 0;
+
+        int startIdx = sidebarPage * itemsPerPage;
+        int endIdx = min((int)rooms.size(), startIdx + itemsPerPage);
+
+        // Render Grid (3x3)
+        int startY = 10;
+        int gridX = sbX + 4;
+        int col = 0;
+        int row = 0;
+
+        for(int i = startIdx; i < endIdx; ++i) {
+            int x = gridX + (col * 18); // Spacing
+            int y = startY + (row * 5);
+            
+            std::string color = rooms[i].free ? CYAN : RED;
+            std::string borderColor = rooms[i].free ? CYAN : RED;
+            
+            gotoxy(x, y);     std::cout << borderColor << "┌──────────┐" << RESET;
+            gotoxy(x, y + 1); std::cout << borderColor << "│ " << WHITE << center(rooms[i].id, 8) << borderColor << " │" << RESET;
+            gotoxy(x, y + 2); std::cout << borderColor << "│ " << YELLOW << center(rooms[i].type, 8) << borderColor << " │" << RESET;
+            gotoxy(x, y + 3); std::cout << borderColor << "└──────────┘" << RESET;
+
+            col++;
+            if (col >= 3) {
+                col = 0;
+                row++;
+            }
+        }
+
+        // Render Arrows
+        int arrowY = startY + (3 * 5) + 1; // Below grid
+        gotoxy(sbX + 2, arrowY);
+        if (sidebarPage > 0) {
+            std::cout << YELLOW << "◄ PREV" << RESET;
+        } else {
+            std::cout << "      ";
+        }
+
+        gotoxy(sbX + SIDEBAR_WIDTH - 10, arrowY);
+        if (sidebarPage < totalPages - 1) {
+            std::cout << YELLOW << "NEXT ►" << RESET;
         }
     }
 
@@ -474,7 +538,7 @@ namespace RetroUI {
                 drawBigClock(CONTENT_WIDTH + 1 + 6, 2);
                 
                 // Update Globe
-                drawWorld(CONTENT_WIDTH + 1 + (SIDEBAR_WIDTH - 56)/2, CONSOLE_HEIGHT - 26, frameCounter++);
+                drawWorld(CONTENT_WIDTH + 1 + (SIDEBAR_WIDTH - 56)/2, CONSOLE_HEIGHT - 20, frameCounter++);
             }
 
             // Wait for input with timeout for clock update
@@ -496,6 +560,14 @@ namespace RetroUI {
                         } else if (key == VK_RETURN) {
                             playSound(800, 50);
                             return selected + 1;
+                        } else if (key == VK_RIGHT) {
+                            sidebarPage++;
+                            playSound(400, 20);
+                            needRedraw = true;
+                        } else if (key == VK_LEFT) {
+                            sidebarPage--;
+                            playSound(400, 20);
+                            needRedraw = true;
                         }
                     } else if (ir[i].EventType == MOUSE_EVENT) {
                         MOUSE_EVENT_RECORD mer = ir[i].Event.MouseEvent;
@@ -512,6 +584,22 @@ namespace RetroUI {
                             if (mer.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED) {
                                 playSound(800, 50);
                                 return selected + 1;
+                            }
+                        }
+                        
+                        // Check Sidebar Arrows
+                        if (mer.dwMousePosition.X > CONTENT_WIDTH) {
+                            int arrowY = 10 + (3 * 5) + 1; // Match drawLayout calculation
+                            if (mer.dwMousePosition.Y == arrowY) {
+                                if (mer.dwMousePosition.X < CONTENT_WIDTH + 15) {
+                                    // Prev
+                                    sidebarPage--;
+                                    needRedraw = true;
+                                } else if (mer.dwMousePosition.X > CONSOLE_WIDTH - 15) {
+                                    // Next
+                                    sidebarPage++;
+                                    needRedraw = true;
+                                }
                             }
                         }
                     }

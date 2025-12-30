@@ -210,9 +210,20 @@ void Hotel::loadReservations() {
 
 std::vector<std::string> Hotel::getRoomStatusList() const {
     std::vector<std::string> list;
-    for (const auto& room : chambres) {
+    std::vector<Room> sortedRooms = chambres;
+    std::sort(sortedRooms.begin(), sortedRooms.end(), [](const Room& a, const Room& b) {
+        return a.getNumeroChambre() < b.getNumeroChambre();
+    });
+
+    int currentFloor = -1;
+    for (const auto& room : sortedRooms) {
+        int floor = room.getNumeroChambre() / 100;
+        if (floor != currentFloor) {
+            currentFloor = floor;
+            list.push_back("--- ETAGE " + std::to_string(floor) + " ---");
+        }
         std::string status = room.getDisponibilite() ? "FREE" : "OCCUPIED";
-        list.push_back(std::to_string(room.getNumeroChambre()) + ": " + status);
+        list.push_back(std::to_string(room.getNumeroChambre()) + ":" + status + ":" + room.getTypeChambre());
     }
     return list;
 }

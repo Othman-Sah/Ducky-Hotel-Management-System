@@ -367,8 +367,19 @@ int main() {
     // Setup initial data
     hotel.ajouterChambre(101, "Simple", 500.0);
     hotel.ajouterChambre(102, "Simple", 500.0);
+    hotel.ajouterChambre(103, "Simple", 500.0);
+    hotel.ajouterChambre(104, "Double", 700.0);
+    hotel.ajouterChambre(105, "Double", 700.0);
+    
     hotel.ajouterChambre(201, "Double", 800.0);
+    hotel.ajouterChambre(202, "Double", 800.0);
+    hotel.ajouterChambre(203, "Suite", 1200.0);
+    hotel.ajouterChambre(204, "Suite", 1200.0);
+    
     hotel.ajouterChambre(301, "Suite", 1500.0);
+    hotel.ajouterChambre(302, "Presid.", 2500.0);
+    hotel.ajouterChambre(303, "Presid.", 2500.0);
+    
     hotel.loadReservations(); // Load saved reservations
 
     while (true) {
