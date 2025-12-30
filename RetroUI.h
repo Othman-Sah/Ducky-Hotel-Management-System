@@ -13,13 +13,15 @@
 #include <algorithm>
 #include <cmath>
 
+#pragma comment(lib, "user32.lib")
+
 namespace RetroUI {
 
     // Layout Constants
-    const int CONSOLE_WIDTH = 210;
-    const int CONSOLE_HEIGHT = 58;
-    const int SIDEBAR_WIDTH = 60;
-    const int CONTENT_WIDTH = CONSOLE_WIDTH - SIDEBAR_WIDTH;
+    static int CONSOLE_WIDTH = 210;
+    static int CONSOLE_HEIGHT = 58;
+    static int SIDEBAR_WIDTH = 60;
+    static int CONTENT_WIDTH = CONSOLE_WIDTH - SIDEBAR_WIDTH;
 
     const std::string RESET = "\033[0m";
     const std::string ORANGE = "\033[38;5;208m";      // Main Borders
@@ -48,11 +50,31 @@ namespace RetroUI {
         dwInMode &= ~ENABLE_QUICK_EDIT_MODE; // Disable QuickEdit to allow mouse input
         SetConsoleMode(hIn, dwInMode);
 
-        // Set Window Size (Large resolution)
-        COORD bufferSize = {static_cast<SHORT>(CONSOLE_WIDTH), static_cast<SHORT>(CONSOLE_HEIGHT)};
-        SetConsoleScreenBufferSize(hOut, bufferSize);
-        SMALL_RECT windowSize = {0, 0, static_cast<SHORT>(CONSOLE_WIDTH - 1), static_cast<SHORT>(CONSOLE_HEIGHT - 1)};
-        SetConsoleWindowInfo(hOut, TRUE, &windowSize);
+        // 1. Set a large buffer to allow maximizing
+        COORD largeBuffer = {400, 150};
+        SetConsoleScreenBufferSize(hOut, largeBuffer);
+
+        // 2. Maximize Window
+        HWND consoleWindow = GetConsoleWindow();
+        ShowWindow(consoleWindow, SW_MAXIMIZE);
+
+        // 3. Update dimensions based on actual maximized size
+        CONSOLE_SCREEN_BUFFER_INFO csbi;
+        GetConsoleScreenBufferInfo(hOut, &csbi);
+        CONSOLE_WIDTH = csbi.srWindow.Right - csbi.srWindow.Left + 1;
+        CONSOLE_HEIGHT = csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
+        CONTENT_WIDTH = CONSOLE_WIDTH - SIDEBAR_WIDTH;
+
+        // 4. Sync Buffer Size to remove scrollbars
+        COORD finalBuffer = {static_cast<SHORT>(CONSOLE_WIDTH), static_cast<SHORT>(CONSOLE_HEIGHT)};
+        SetConsoleScreenBufferSize(hOut, finalBuffer);
+
+        // Disable resizing to prevent UI glitches
+        if (consoleWindow != NULL) {
+            LONG style = GetWindowLong(consoleWindow, GWL_STYLE);
+            style = style & ~(WS_MAXIMIZEBOX) & ~(WS_THICKFRAME);
+            SetWindowLong(consoleWindow, GWL_STYLE, style);
+        }
 
         // Hide Cursor
         CONSOLE_CURSOR_INFO cursorInfo;
@@ -89,6 +111,42 @@ namespace RetroUI {
         return std::string(left, ' ') + text + std::string(right, ' ');
     }
 
+    void drawBigClock(int x, int y) {
+        static const std::vector<std::string> DIGITS[11] = {
+            { "  ___  ", " / _ \\ ", "| | | |", "| |_| |", " \\___/ " },
+            { "   _   ", "  / |  ", "  | |  ", "  | |  ", "  |_|  " },
+            { "  ___  ", " |_  ) ", "  / /  ", " /___| ", "|_____|" },
+            { "  ___  ", " |__ / ", "  |_ \\ ", " |___/ ", "|____/ " },
+            { "  _ _  ", " | | | ", " |_  _|", "   | | ", "   |_| " },
+            { "  ___  ", " | __| ", " |__ \\ ", " |___/ ", "|____/ " },
+            { "  __   ", " / /_  ", "| '_ \\ ", "| (_) |", " \\___/ " },
+            { " ____  ", "|__  | ", "  / /  ", " /_/   ", "/_/    " },
+            { "  ___  ", " ( _ ) ", " / _ \\ ", "| (_) |", " \\___/ " },
+            { "  ___  ", " / _ \\ ", "| (_) |", "  \\__, |", "    /_/ " },
+            { "   ", " _ ", "(_)", " _ ", "(_)" }
+        };
+
+        std::time_t t = std::time(nullptr);
+        std::tm tm = *std::localtime(&t);
+        
+        int nums[] = {
+            tm.tm_hour / 10, tm.tm_hour % 10,
+            10,
+            tm.tm_min / 10, tm.tm_min % 10,
+            10,
+            tm.tm_sec / 10, tm.tm_sec % 10
+        };
+
+        for (int row = 0; row < 5; ++row) {
+            gotoxy(x, y + row);
+            std::cout << YELLOW << BOLD;
+            for (int i = 0; i < 8; ++i) {
+                std::cout << DIGITS[nums[i]][row];
+            }
+            std::cout << RESET;
+        }
+    }
+
     // Draw the main static layout (Borders, Sidebar container)
     void drawLayout(const std::string& title, const std::vector<std::string>& sidebar = {}) {
         clear();
@@ -121,13 +179,12 @@ namespace RetroUI {
         std::cout << "╚" << std::string(SIDEBAR_WIDTH - 2, '═') << "╝";
 
         // --- Clock ---
-        gotoxy(sbX + 1, 3);
-        std::cout << YELLOW << BOLD << center(getCurrentTime(), SIDEBAR_WIDTH - 2) << RESET;
-        gotoxy(sbX, 4);
+        drawBigClock(sbX + 6, 2);
+        gotoxy(sbX, 8);
         std::cout << ORANGE << "╠" << std::string(SIDEBAR_WIDTH - 2, '═') << "╣";
 
         // --- Sidebar Items ---
-        int y = 5;
+        int y = 9;
         for(const auto& item : sidebar) {
             if(y >= CONSOLE_HEIGHT - 30) break; // Reserve space for duck
             gotoxy(sbX + 2, y++);
@@ -414,8 +471,7 @@ namespace RetroUI {
                 needRedraw = false;
             } else if (!sidebar.empty()) {
                 // Update just the clock if no full redraw needed
-                gotoxy(CONTENT_WIDTH + 1 + 1, 3); 
-                std::cout << YELLOW << BOLD << center(getCurrentTime(), SIDEBAR_WIDTH - 2) << RESET;
+                drawBigClock(CONTENT_WIDTH + 1 + 6, 2);
                 
                 // Update Globe
                 drawWorld(CONTENT_WIDTH + 1 + (SIDEBAR_WIDTH - 56)/2, CONSOLE_HEIGHT - 26, frameCounter++);
