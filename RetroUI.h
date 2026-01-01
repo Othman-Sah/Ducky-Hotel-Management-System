@@ -534,6 +534,10 @@ namespace RetroUI {
     };
 
     void drawFloorPlan(const std::vector<RoomData>& rooms) {
+        std::string BLOCK = "\xE2\x96\x88";
+        std::string BLOCK_TOP = "\xE2\x96\x80";
+        auto rep = [](const std::string& s, int n) { for(int i=0; i<n; i++) std::cout << s; };
+
         // Group by floor (e.g., 101 -> Floor 1)
         std::map<int, std::vector<RoomData>> floors;
         for (const auto& r : rooms) {
@@ -548,43 +552,210 @@ namespace RetroUI {
             int floorNum = it->first;
             const auto& floorRooms = it->second;
 
-            if (y > CONSOLE_HEIGHT - 6) break; // Safety check
+            if (y + 15 > CONSOLE_HEIGHT - 3) break; // Safety check
 
-            gotoxy(4, y++);
-            std::cout << BRIGHT_ORANGE << "ETAGE " << floorNum << RESET;
+            int mapX = 4;
             
-            // Draw Top Borders
-            gotoxy(4, y);
-            for(const auto& r : floorRooms) {
-                std::string color = r.free ? CYAN : RED;
-                std::cout << color << "┌────────────┐  " << RESET;
-            }
-            y++;
+            // Draw Floor Header
+            gotoxy(mapX, y++);
+            std::cout << ORANGE << BLOCK << " FLOOR " << floorNum << " ";
+            rep(BLOCK_TOP, 80);
+            std::cout << RESET;
 
-            // Draw Room Number
-            gotoxy(4, y);
-            for(const auto& r : floorRooms) {
-                std::string color = r.free ? CYAN : RED;
-                std::cout << color << "│ " << WHITE << BOLD << std::left << std::setw(10) << r.id << color << " │  " << RESET;
-            }
-            y++;
+            // Visual Map Template (Blueprint Style)
+            std::vector<std::string> mapBase = {
+                "   ╔══════╗    ┌──────────┐  ┌──────────┐  ┌────────────────────┐  ┌──────────┐   ",
+                "   ║STAIRS║    │          │  │          │  │                    │  │          │   ",
+                "   ║      ║    │          │  │          │  │                    │  │          │   ",
+                "   ║      ║    │          │  │          │  │                    │  │          │   ",
+                "   ╚══════╝    └────┬┬────┘  └────┬┬────┘  └─────────┬┬─────────┘  └────┬┬────┘   ",
+                "                    ││            ││                 ││                 ││        ",
+                "   ◄ H A L L ───────┴┴────────────┴┴─────────────────┴┴─────────────────┴┴──────► ",
+                "                    ││            ││                 ││                 ││        ",
+                "   ┌──────┐    ┌────┴┴────┐  ┌────┴┴────┐  ┌─────────┴┴─────────┐  ┌────┴┴────┐   ",
+                "   │  WC  │    │          │  │          │  │                    │  │          │   ",
+                "   │      │    │          │  │          │  │                    │  │          │   ",
+                "   │      │    │          │  │          │  │                    │  │          │   ",
+                "   └──────┘    └──────────┘  └──────────┘  └────────────────────┘  └──────────┘   "
+            };
 
-            // Draw Room Type
-            gotoxy(4, y);
-            for(const auto& r : floorRooms) {
-                std::string color = r.free ? CYAN : RED;
-                std::string typeShort = r.type.substr(0, 10);
-                std::cout << color << "│ " << WHITE << std::left << std::setw(10) << typeShort << color << " │  " << RESET;
+            for(int i=0; i<mapBase.size(); i++) {
+                gotoxy(mapX, y + i);
+                std::cout << DARK_GRAY << mapBase[i] << RESET;
             }
-            y++;
 
-            // Draw Bottom Borders
-            gotoxy(4, y);
-            for(const auto& r : floorRooms) {
-                std::string color = r.free ? CYAN : RED;
-                std::cout << color << "└────────────┘  " << RESET;
+            // Define Room Slots: {suffix, relX, relY, width, height}
+            struct Slot { int suffix; int x; int y; int w; int h; };
+            std::vector<Slot> slots = {
+                {1, 16, 1, 10, 3}, {2, 30, 1, 10, 3}, {3, 44, 1, 20, 3}, {4, 68, 1, 10, 3}, // Top Row
+                {5, 16, 9, 10, 3}, {6, 30, 9, 10, 3}, {7, 44, 9, 20, 3}, {8, 68, 9, 10, 3}  // Bottom Row
+            };
+
+            for (const auto& r : floorRooms) {
+                int suffix = r.id % 100;
+                for (const auto& s : slots) {
+                    if (s.suffix == suffix) {
+                        std::string color = r.free ? CYAN : RED;
+                        std::string borderColor = r.free ? CYAN : RED;
+                        
+                        // Draw Box Borders (Overwriting map base)
+                        gotoxy(mapX + s.x - 1, y + s.y - 1); std::cout << borderColor << "┌" << std::string(s.w, '─') << "┐";
+                        for(int k=0; k<s.h; k++) {
+                            gotoxy(mapX + s.x - 1, y + s.y + k); std::cout << borderColor << "│";
+                            gotoxy(mapX + s.x + s.w, y + s.y + k); std::cout << borderColor << "│";
+                        }
+                        gotoxy(mapX + s.x - 1, y + s.y + s.h); std::cout << borderColor << "└" << std::string(s.w, '─') << "┘";
+
+                        // Draw Info
+                        gotoxy(mapX + s.x, y + s.y);     std::cout << color << BOLD << center(std::to_string(r.id), s.w) << RESET;
+                        gotoxy(mapX + s.x, y + s.y + 1); std::cout << WHITE << center(r.type.substr(0, s.w), s.w) << RESET;
+                        gotoxy(mapX + s.x, y + s.y + 2); std::cout << (r.free ? GREEN : RED) << center(r.free ? "FREE" : "BUSY", s.w) << RESET;
+                    }
+                }
             }
-            y += 2; // Space between floors
+            y += 15; // Space between floors
+        }
+    }
+
+    struct ParkingData {
+        int id;
+        bool free;
+    };
+
+    void drawParkingMap(const std::vector<ParkingData>& spots) {
+        std::string BLOCK = "\xE2\x96\x88";
+        std::string BLOCK_TOP = "\xE2\x96\x80";
+        auto rep = [](const std::string& s, int n) { for(int i=0; i<n; i++) std::cout << s; };
+
+        int y = 6;
+        int mapX = 4;
+
+        // Header
+        gotoxy(mapX, y++);
+        std::cout << ORANGE << BLOCK << " PARKING LOT " << std::string(70, ' ') << RESET;
+        gotoxy(mapX + 14, y-1); rep(BLOCK_TOP, 80);
+
+        // Map Base
+        std::vector<std::string> mapBase = {
+            "   ╔════════════════════════════════════════════════════════════════════════════════════════════╗   ",
+            "   ║  ENTRY  ►      ┌───┐   ┌───┐   ┌───┐   ┌───┐   ┌───┐   ┌───┐   ┌───┐   ┌───┐      ◄ EXIT   ║   ",
+            "   ║                │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   │               ║   ",
+            "   ║                └───┘   └───┘   └───┘   └───┘   └───┘   └───┘   └───┘   └───┘               ║   ",
+            "   ║                                                                                            ║   ",
+            "   ║   ┌──┐         ┌───┐   ┌───┐   ┌───┐   ┌───┐   ┌───┐   ┌───┐   ┌───┐   ┌───┐      ┌──┐     ║   ",
+            "   ║   │P │         │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   │      │P │     ║   ",
+            "   ║   └──┘         └───┘   └───┘   └───┘   └───┘   └───┘   └───┘   └───┘   └───┘      └──┘     ║   ",
+            "   ╚════════════════════════════════════════════════════════════════════════════════════════════╝   "
+        };
+
+        for(int i=0; i<mapBase.size(); i++) {
+            gotoxy(mapX, y + i);
+            std::cout << DARK_GRAY << mapBase[i] << RESET;
+        }
+
+        // Slots: {id, x, y}
+        struct PSlot { int id; int x; int y; };
+        std::vector<PSlot> pslots = {
+            {1, 20, 2}, {2, 28, 2}, {3, 36, 2}, {4, 44, 2}, {5, 52, 2}, {6, 60, 2}, {7, 68, 2}, {8, 76, 2},
+            {9, 20, 6}, {10, 28, 6}, {11, 36, 6}, {12, 44, 6}, {13, 52, 6}, {14, 60, 6}, {15, 68, 6}, {16, 76, 6}
+        };
+
+        for (const auto& s : spots) {
+            for (const auto& ps : pslots) {
+                if (ps.id == s.id) {
+                    std::string color = s.free ? GREEN : RED;
+                    // Draw Box with Status
+                    gotoxy(mapX + ps.x, y + ps.y - 1); std::cout << color << "┌" << (s.id < 10 ? "0" : "") << s.id << "┐" << RESET;
+                    gotoxy(mapX + ps.x, y + ps.y);     std::cout << color << "│" << (s.free ? "Fr" : "Bs") << "│" << RESET;
+                    gotoxy(mapX + ps.x, y + ps.y + 1); std::cout << color << "└───┘" << RESET;
+                }
+            }
+        }
+    }
+
+    struct TableData {
+        int id;
+        bool free;
+    };
+
+    void drawRestaurantMap(const std::vector<TableData>& tables) {
+        std::string BLOCK = "\xE2\x96\x88";
+        std::string BLOCK_TOP = "\xE2\x96\x80";
+        auto rep = [](const std::string& s, int n) { for(int i=0; i<n; i++) std::cout << s; };
+
+        int y = 6;
+        int mapX = 4;
+
+        gotoxy(mapX, y++);
+        std::cout << ORANGE << BLOCK << " RESTAURANT " << std::string(70, ' ') << RESET;
+        gotoxy(mapX + 13, y-1); rep(BLOCK_TOP, 81);
+
+        std::vector<std::string> mapBase = {
+            "   ╔════════════════════════════════════════════════════════════════════════════════════════════╗   ",
+            "   ║   KITCHEN      ┌──────┐    ┌──────┐    ┌──────┐    ┌──────┐    ┌──────┐       BAR          ║   ",
+            "   ║   [======]     │      │    │      │    │      │    │      │    │      │      [====]        ║   ",
+            "   ║                └──────┘    └──────┘    └──────┘    └──────┘    └──────┘                    ║   ",
+            "   ║                                                                                            ║   ",
+            "   ║                ┌──────┐    ┌──────┐    ┌──────┐    ┌──────┐    ┌──────┐      ╔════╗        ║   ",
+            "   ║   ENTRANCE     │      │    │      │    │      │    │      │    │      │      ║ DJ ║        ║   ",
+            "   ║      ==>       └──────┘    └──────┘    └──────┘    └──────┘    └──────┘      ╚════╝        ║   ",
+            "   ╚════════════════════════════════════════════════════════════════════════════════════════════╝   "
+        };
+
+        for(int i=0; i<mapBase.size(); i++) {
+            gotoxy(mapX, y + i);
+            std::cout << DARK_GRAY << mapBase[i] << RESET;
+        }
+
+        struct TSlot { int id; int x; int y; };
+        std::vector<TSlot> tslots = {
+            {1, 20, 1}, {2, 32, 1}, {3, 44, 1}, {4, 56, 1}, {5, 68, 1},
+            {6, 20, 5}, {7, 32, 5}, {8, 44, 5}, {9, 56, 5}, {10, 68, 5}
+        };
+
+        for (const auto& t : tables) {
+            for (const auto& ts : tslots) {
+                if (ts.id == t.id) {
+                    std::string color = t.free ? CYAN : RED;
+                    gotoxy(mapX + ts.x, y + ts.y);     std::cout << color << "┌──" << (t.id < 10 ? "0" : "") << t.id << "──┐" << RESET;
+                    gotoxy(mapX + ts.x, y + ts.y + 1); std::cout << color << "│ " << (t.free ? "FREE" : "BUSY") << " │" << RESET;
+                    gotoxy(mapX + ts.x, y + ts.y + 2); std::cout << color << "└──────┘" << RESET;
+                }
+            }
+        }
+    }
+
+    void drawEntranceMap() {
+        std::string BLOCK = "\xE2\x96\x88";
+        std::string BLOCK_TOP = "\xE2\x96\x80";
+        auto rep = [](const std::string& s, int n) { for(int i=0; i<n; i++) std::cout << s; };
+
+        int y = 6;
+        int mapX = 4;
+
+        gotoxy(mapX, y++);
+        std::cout << ORANGE << BLOCK << " HOTEL ENTRANCE " << std::string(70, ' ') << RESET;
+        gotoxy(mapX + 17, y-1); rep(BLOCK_TOP, 77);
+
+        std::vector<std::string> mapBase = {
+            "   ╔════════════════════════════════════════════════════════════════════════════════════════════╗   ",
+            "   ║                  HOTEL DELUXE MAIN ENTRANCE                                                ║   ",
+            "   ║      ┌──────┐                                                        ┌──────┐              ║   ",
+            "   ║      │ VALET│            ================================            │ TAXI │              ║   ",
+            "   ║      └──────┘            |        RECEPTION DESK        |            └──────┘              ║   ",
+            "   ║                          ================================                                  ║   ",
+            "   ║                                                                                            ║   ",
+            "   ║       [  ]                    [  ]      [  ]                    [  ]                       ║   ",
+            "   ║      PLANT                   LOUNGE    LOUNGE                  PLANT                       ║   ",
+            "   ║                                                                                            ║   ",
+            "   ║                       /  /  /  /  /  /  /  /  /  /  /  /                                   ║   ",
+            "   ║                      /  /  /  /  STAIRS /  /  /  /  /  /                                   ║   ",
+            "   ╚════════════════════════════════════════════════════════════════════════════════════════════╝   "
+        };
+
+        for(int i=0; i<mapBase.size(); i++) {
+            gotoxy(mapX, y + i);
+            std::cout << WHITE << mapBase[i] << RESET;
         }
     }
 
@@ -702,6 +873,71 @@ namespace RetroUI {
             for(int col=0; col<width; col++) {
                 char pixel = buffer[row * width + col];
                 std::cout << (pixel == ' ' ? " " : (YELLOW + std::string(1, pixel) + RESET));
+            }
+        }
+    }
+
+    void showMapViewer(const std::vector<RoomData>& rooms, const std::vector<ParkingData>& parking, const std::vector<TableData>& tables) {
+        int currentMap = 0; // 0: Floor, 1: Parking, 2: Restaurant, 3: Entrance
+        const int TOTAL_MAPS = 4;
+        bool inMapMode = true;
+        HANDLE hIn = GetStdHandle(STD_INPUT_HANDLE);
+        INPUT_RECORD ir[128];
+        DWORD nRead;
+        bool needRedraw = true;
+        int frameCounter = 0;
+
+        FlushConsoleInputBuffer(hIn);
+
+        while (inMapMode) {
+            if (needRedraw) {
+                std::string title;
+                switch(currentMap) {
+                    case 0: title = "HOTEL FLOOR PLAN"; break;
+                    case 1: title = "PARKING LOT"; break;
+                    case 2: title = "RESTAURANT & BAR"; break;
+                    case 3: title = "MAIN ENTRANCE"; break;
+                }
+                
+                drawLayout(title);
+
+                switch(currentMap) {
+                    case 0: drawFloorPlan(rooms); break;
+                    case 1: drawParkingMap(parking); break;
+                    case 2: drawRestaurantMap(tables); break;
+                    case 3: drawEntranceMap(); break;
+                }
+                
+                gotoxy(4, CONSOLE_HEIGHT - 4);
+                std::cout << YELLOW << "◄ PREV MAP (Left Arrow)   |   NEXT MAP (Right Arrow) ►   |   EXIT (Esc/Enter)" << RESET;
+
+                needRedraw = false;
+            }
+
+            // Background animations
+            drawBigClock(CONTENT_WIDTH + 1 + 6, 2);
+            drawWorld(CONTENT_WIDTH + 1 + (SIDEBAR_WIDTH - 56)/2, CONSOLE_HEIGHT - 20, frameCounter++);
+            drawTicker(frameCounter);
+
+            if (WaitForSingleObject(hIn, 50) == WAIT_OBJECT_0) {
+                ReadConsoleInput(hIn, ir, 128, &nRead);
+                for (DWORD i = 0; i < nRead; i++) {
+                    if (ir[i].EventType == KEY_EVENT && ir[i].Event.KeyEvent.bKeyDown) {
+                        WORD key = ir[i].Event.KeyEvent.wVirtualKeyCode;
+                        if (key == VK_LEFT) {
+                            currentMap = (currentMap - 1 + TOTAL_MAPS) % TOTAL_MAPS;
+                            playSound(400, 20);
+                            needRedraw = true;
+                        } else if (key == VK_RIGHT) {
+                            currentMap = (currentMap + 1) % TOTAL_MAPS;
+                            playSound(400, 20);
+                            needRedraw = true;
+                        } else if (key == VK_ESCAPE || key == VK_RETURN) {
+                            inMapMode = false;
+                            playSound(600, 50);
+                        }
+                    }
+                }
             }
         }
     }
