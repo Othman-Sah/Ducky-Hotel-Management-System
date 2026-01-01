@@ -27,15 +27,27 @@ int main() {
     hotel.ajouterChambre(103, "Simple", 500.0);
     hotel.ajouterChambre(104, "Double", 700.0);
     hotel.ajouterChambre(105, "Double", 700.0);
+    hotel.ajouterChambre(106, "Double", 700.0);
+    hotel.ajouterChambre(107, "Suite", 900.0);
+    hotel.ajouterChambre(108, "Simple", 500.0);
     
     hotel.ajouterChambre(201, "Double", 800.0);
     hotel.ajouterChambre(202, "Double", 800.0);
     hotel.ajouterChambre(203, "Suite", 1200.0);
     hotel.ajouterChambre(204, "Suite", 1200.0);
+    hotel.ajouterChambre(205, "Double", 800.0);
+    hotel.ajouterChambre(206, "Double", 800.0);
+    hotel.ajouterChambre(207, "Suite", 1200.0);
+    hotel.ajouterChambre(208, "Double", 800.0);
     
     hotel.ajouterChambre(301, "Suite", 1500.0);
     hotel.ajouterChambre(302, "Presid.", 2500.0);
     hotel.ajouterChambre(303, "Presid.", 2500.0);
+    hotel.ajouterChambre(304, "Suite", 1500.0);
+    hotel.ajouterChambre(305, "Suite", 1500.0);
+    hotel.ajouterChambre(306, "Suite", 1500.0);
+    hotel.ajouterChambre(307, "Presid.", 2500.0);
+    hotel.ajouterChambre(308, "Suite", 1500.0);
     
     hotel.loadReservations(); // Load saved reservations
 
@@ -61,12 +73,12 @@ int main() {
 
             std::vector<RetroUI::ParkingData> parkingData;
             int occupied = ParkingManager::getTotalSpots() - ParkingManager::getAvailableSpots();
-            for (int i = 1; i <= 16; i++) {
+            for (int i = 1; i <= 50; i++) {
                 parkingData.push_back({i, i > occupied});
             }
 
             std::vector<RetroUI::TableData> tableData;
-            for (int i = 1; i <= 10; i++) tableData.push_back({i, true});
+            for (int i = 1; i <= 24; i++) tableData.push_back({i, true});
 
             RetroUI::showMapViewer(roomData, parkingData, tableData);
         } else if (choice == 3) {
