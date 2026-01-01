@@ -9,16 +9,10 @@
 
 int main() {
     RetroUI::setupConsole();
+    RetroUI::updateTheme();
     
-    // Cool Loading Animation
-    RetroUI::clear();
-    RetroUI::gotoxy(40, 12);
-    std::cout << RetroUI::ORANGE << "INITIALIZING SYSTEM..." << std::endl;
-    RetroUI::gotoxy(40, 14);
-    std::cout << RetroUI::YELLOW << "[";
-    for(int i=0; i<40; i++) { std::cout << "="; Sleep(30); }
-    std::cout << "]" << RetroUI::RESET;
-    Sleep(500);
+    // CRT Boot Sequence
+    RetroUI::bootSequence();
 
     Authentication auth;
     Hotel hotel("Hotel Deluxe EMSI");

@@ -12,6 +12,8 @@
 #include <iomanip>
 #include <algorithm>
 #include <cmath>
+#include <mmsystem.h>
+#pragma comment(lib, "winmm.lib")
 
 #pragma comment(lib, "user32.lib")
 
@@ -24,15 +26,84 @@ namespace RetroUI {
     static int CONTENT_WIDTH = CONSOLE_WIDTH - SIDEBAR_WIDTH;
     static int sidebarPage = 0;
 
-    const std::string RESET = "\033[0m";
-    const std::string ORANGE = "\033[38;5;208m";      // Main Borders
-    const std::string BRIGHT_ORANGE = "\033[38;5;214m"; // Highlights
-    const std::string YELLOW = "\033[38;5;226m";      // Accents
-    const std::string CYAN = "\033[38;5;51m";         // Contrast (Free rooms)
-    const std::string RED = "\033[38;5;196m";         // Occupied
-    const std::string WHITE = "\033[38;5;255m";       // Text
-    const std::string BOLD = "\033[1m";
-    const std::string INVERSE = "\033[7m";
+    static std::string RESET = "\033[0m";
+    static std::string ORANGE = "\033[38;5;208m";      // Main Borders
+    static std::string BRIGHT_ORANGE = "\033[38;5;214m"; // Highlights
+    static std::string YELLOW = "\033[38;5;226m";      // Accents
+    static std::string CYAN = "\033[38;5;51m";         // Contrast (Free rooms)
+    static std::string RED = "\033[38;5;196m";         // Occupied
+    static std::string WHITE = "\033[38;5;255m";       // Text
+    static std::string GREEN = "\033[38;5;46m";        // Success/Online
+    static std::string DARK_GRAY = "\033[38;5;235m";   // Background details
+    static std::string BOLD = "\033[1m";
+    static std::string INVERSE = "\033[7m";
+
+    // --- Music Player State & Functions ---
+    static std::vector<std::string> playlist;
+    static int currentSongIndex = 0;
+    static bool isMusicPlaying = false;
+    static bool isMusicPaused = false;
+    static int mediaButtonFocus = -1; // -1: None, 0: Prev, 1: Play, 2: Next
+
+    void loadMusic() {
+        if (!playlist.empty()) return;
+        WIN32_FIND_DATAA findFileData;
+        std::string folder = "music/";
+        
+        // Try 'music' folder first
+        HANDLE hFind = FindFirstFileA((folder + "*.mp3").c_str(), &findFileData);
+        
+        // If not found, try 'musics' (common typo/variation)
+        if (hFind == INVALID_HANDLE_VALUE) {
+            folder = "musics/";
+            hFind = FindFirstFileA((folder + "*.mp3").c_str(), &findFileData);
+        }
+
+        if (hFind != INVALID_HANDLE_VALUE) {
+            do {
+                playlist.push_back(folder + findFileData.cFileName);
+            } while (FindNextFileA(hFind, &findFileData) != 0);
+            FindClose(hFind);
+        }
+    }
+
+    void playMusic() {
+        if (playlist.empty()) return;
+        // Close any existing instance to prevent errors
+        mciSendStringA("close bgm", NULL, 0, NULL);
+        std::string cmd = "open \"" + playlist[currentSongIndex] + "\" type mpegvideo alias bgm";
+        mciSendStringA(cmd.c_str(), NULL, 0, NULL);
+        mciSendStringA("play bgm", NULL, 0, NULL);
+        isMusicPlaying = true;
+        isMusicPaused = false;
+    }
+
+    void stopMusic() {
+        mciSendStringA("close bgm", NULL, 0, NULL);
+        isMusicPlaying = false;
+        isMusicPaused = false;
+    }
+
+    void togglePauseMusic() {
+        if (isMusicPlaying) {
+            if (isMusicPaused) {
+                mciSendStringA("resume bgm", NULL, 0, NULL);
+                isMusicPaused = false;
+            } else {
+                mciSendStringA("pause bgm", NULL, 0, NULL);
+                isMusicPaused = true;
+            }
+        } else {
+            playMusic();
+        }
+    }
+
+    void nextMusic() {
+        stopMusic();
+        if (playlist.empty()) return;
+        currentSongIndex = (currentSongIndex + 1) % playlist.size();
+        playMusic();
+    }
 
     void setupConsole() {
         HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -110,6 +181,154 @@ namespace RetroUI {
         int left = (width - len) / 2;
         int right = width - len - left;
         return std::string(left, ' ') + text + std::string(right, ' ');
+    }
+
+    void typeWrite(const std::string& text, int speed) {
+        for (char c : text) {
+            std::cout << c << std::flush;
+            Sleep(speed);
+        }
+    }
+
+    void bootSequence() {
+        clear();
+        gotoxy(2, 2); std::cout << GREEN; typeWrite("BIOS CHECK ................. OK", 10);
+        gotoxy(2, 3); typeWrite("LOADING KERNEL ............. OK", 10);
+        gotoxy(2, 4); typeWrite("MOUNTING FILESYSTEM ........ OK", 10);
+        gotoxy(2, 5); typeWrite("INITIALIZING GRAPHICS ...... OK", 10);
+        
+        gotoxy(2, 7);
+        std::cout << "MEMORY: ";
+        for(int i=0; i<=4096; i+=128) {
+            std::cout << "\rMEMORY: " << i << " MB OK" << std::flush;
+            Sleep(5);
+        }
+        std::cout << RESET << std::endl;
+        Sleep(500);
+    }
+
+    void updateTheme() {
+        std::time_t now = std::time(nullptr);
+        std::tm *ltm = std::localtime(&now);
+        if (ltm->tm_hour >= 18 || ltm->tm_hour < 6) {
+            // Night Mode (Neon Purple/Blue)
+            ORANGE = "\033[38;5;57m";       // Deep Purple
+            BRIGHT_ORANGE = "\033[38;5;129m"; // Bright Purple
+            YELLOW = "\033[38;5;51m";       // Cyan
+            CYAN = "\033[38;5;201m";        // Magenta
+            RED = "\033[38;5;160m";         // Deep Red
+        } else {
+            // Day Mode (Original)
+            ORANGE = "\033[38;5;208m";
+            BRIGHT_ORANGE = "\033[38;5;214m";
+            YELLOW = "\033[38;5;226m";
+            CYAN = "\033[38;5;51m";
+            RED = "\033[38;5;196m";
+        }
+    }
+
+    void drawTicker(int frame) {
+        // Dimensions & Layout
+        int yTop = CONSOLE_HEIGHT - 2;
+        int yMid = CONSOLE_HEIGHT - 1;
+        int yBot = CONSOLE_HEIGHT;
+
+        int sep1 = CONTENT_WIDTH - 75; // Meteo starts
+        int sep2 = CONTENT_WIDTH - 45; // Media starts
+
+        // Helper to print repeated string (for UTF-8 safety)
+        auto rep = [](const std::string& s, int n) { for(int i=0; i<n; i++) std::cout << s; };
+
+        // --- Draw Top Border ---
+        gotoxy(1, yTop);
+        std::cout << ORANGE << "╔";
+        
+        // News Section Top
+        std::string t1 = "[ LIVE NEWS ]";
+        int pad1 = (sep1 - 2 - (int)t1.length()) / 2;
+        rep("═", pad1); std::cout << t1; rep("═", sep1 - 2 - pad1 - (int)t1.length());
+        
+        std::cout << "╦";
+
+        // Meteo Section Top
+        std::string t2 = "[ METEO ]";
+        int w2 = sep2 - sep1 - 1;
+        int pad2 = (w2 - (int)t2.length()) / 2;
+        rep("═", pad2); std::cout << t2; rep("═", w2 - pad2 - (int)t2.length());
+
+        std::cout << "╦";
+
+        // Media Section Top
+        std::string t3 = "[ MEDIA ]";
+        int w3 = CONTENT_WIDTH - sep2 - 1;
+        int pad3 = (w3 - (int)t3.length()) / 2;
+        rep("═", pad3); std::cout << t3; rep("═", w3 - pad3 - (int)t3.length());
+
+        std::cout << "╗" << RESET;
+
+        // --- Draw Middle Line (Separators) ---
+        gotoxy(1, yMid); std::cout << ORANGE << "║" << RESET;
+        gotoxy(sep1, yMid); std::cout << ORANGE << "║" << RESET;
+        gotoxy(sep2, yMid); std::cout << ORANGE << "║" << RESET;
+        gotoxy(CONTENT_WIDTH, yMid); std::cout << ORANGE << "║" << RESET;
+
+        // --- Draw Bottom Border ---
+        gotoxy(1, yBot);
+        std::cout << ORANGE << "╚";
+        rep("═", sep1 - 1); std::cout << "╩";
+        rep("═", sep2 - sep1 - 1); std::cout << "╩";
+        rep("═", CONTENT_WIDTH - sep2 - 1); std::cout << "╝" << RESET;
+
+        // --- Content: Live News ---
+        std::string news = "Welcome to Hotel Deluxe *** Special Offer: 20% off Spa treatments *** Weather: Sunny 25C *** System Status: ONLINE *** Use Mouse or Arrow Keys to Navigate *** ";
+        int newsW = sep1 - 2;
+        int len = (int)news.length();
+        int offset = (frame / 2) % len; 
+        
+        std::string display = news.substr(offset) + news.substr(0, offset);
+        if ((int)display.length() > newsW) display = display.substr(0, newsW);
+        gotoxy(2, yMid); std::cout << WHITE << display << RESET;
+
+        // --- Content: Meteo ---
+        std::time_t now = std::time(nullptr);
+        std::tm *ltm = std::localtime(&now);
+        bool isNight = (ltm->tm_hour >= 18 || ltm->tm_hour < 6);
+        std::string meteoText = isNight ? "18C CLEAR SKY" : "25C SUNNY";
+        gotoxy(sep1 + 1, yMid); std::cout << WHITE << center(meteoText, sep2 - sep1 - 1) << RESET;
+
+        // --- Content: Media Player ---
+
+        static bool musicLoaded = false;
+        if (!musicLoaded) { loadMusic(); musicLoaded = true; }
+
+        // Controls
+        std::string prevBtn = "[<<]";
+        std::string playBtn = (isMusicPlaying && !isMusicPaused) ? "[||]" : "[|>]";
+        std::string nextBtn = "[>>]";
+        
+        // Highlight based on focus
+        if (mediaButtonFocus == 0) prevBtn = INVERSE + prevBtn + RESET + YELLOW;
+        if (mediaButtonFocus == 1) playBtn = INVERSE + playBtn + RESET + YELLOW;
+        if (mediaButtonFocus == 2) nextBtn = INVERSE + nextBtn + RESET + YELLOW;
+        
+        std::string waves = "";
+        const std::string bars[] = {" ", "▂", "▃", "▄", "▅", "▆", "▇", "█"};
+        if (isMusicPlaying && !isMusicPaused) {
+            for(int i=0; i<5; i++) {
+                int h = rand() % 8;
+                waves += bars[h];
+            }
+        } else {
+            waves = "_____";
+        }
+
+        std::string title = playlist.empty() ? "No MP3s" : playlist[currentSongIndex];
+        if (title.length() > 12) title = title.substr(0, 9) + "...";
+        
+        gotoxy(sep2 + 2, yMid);
+        std::cout << WHITE << std::left << std::setw(13) << title << RESET;
+        std::cout << CYAN << waves << "  " << RESET;
+        std::cout << YELLOW << prevBtn << " " << playBtn << " " << nextBtn << RESET;
     }
 
     void drawBigClock(int x, int y) {
@@ -509,6 +728,7 @@ namespace RetroUI {
         DWORD nRead;
         bool needRedraw = true;
         int frameCounter = 0;
+        mediaButtonFocus = -1; // Reset focus when entering menu
 
         FlushConsoleInputBuffer(hIn);
         
@@ -520,7 +740,7 @@ namespace RetroUI {
 
                 for(size_t i = 0; i < options.size(); ++i) {
                     gotoxy(1, menuStartY + (int)i * 2);
-                    if(i == selected) {
+                    if((int)i == selected) {
                         std::cout << center(" " + options[i] + " ", CONTENT_WIDTH);
                         gotoxy((CONTENT_WIDTH - options[i].length())/2 - 2, menuStartY + (int)i * 2);
                         std::cout << YELLOW << "► " << INVERSE << options[i] << RESET;
@@ -529,8 +749,7 @@ namespace RetroUI {
                     }
                 }
                 
-                gotoxy(1, CONSOLE_HEIGHT - 2);
-                std::cout << ORANGE << center("(Mouse or Arrow Keys + Enter)", CONTENT_WIDTH) << RESET;
+                // Static instruction removed in favor of ticker
                 
                 needRedraw = false;
             } else if (!sidebar.empty()) {
@@ -539,6 +758,9 @@ namespace RetroUI {
                 
                 // Update Globe
                 drawWorld(CONTENT_WIDTH + 1 + (SIDEBAR_WIDTH - 56)/2, CONSOLE_HEIGHT - 20, frameCounter++);
+                
+                // Update Ticker
+                drawTicker(frameCounter);
             }
 
             // Wait for input with timeout for clock update
@@ -548,24 +770,67 @@ namespace RetroUI {
                     if (ir[i].EventType == KEY_EVENT && ir[i].Event.KeyEvent.bKeyDown) {
                         WORD key = ir[i].Event.KeyEvent.wVirtualKeyCode;
                         if (key == VK_UP) {
-                            selected--;
-                            if (selected < 0) selected = static_cast<int>(options.size()) - 1;
+                            if (mediaButtonFocus != -1) {
+                                // Leave media controls, go back to menu bottom
+                                mediaButtonFocus = -1;
+                                selected = static_cast<int>(options.size()) - 1;
+                            } else {
+                                selected--;
+                                if (selected < 0) {
+                                    // Wrap to media controls
+                                    selected = -1;
+                                    mediaButtonFocus = 1; // Default to Play button
+                                }
+                            }
                             playSound(400, 20);
                             needRedraw = true;
                         } else if (key == VK_DOWN) {
-                            selected++;
-                            if (selected >= static_cast<int>(options.size())) selected = 0;
+                            if (mediaButtonFocus != -1) {
+                                // Wrap from media to top of menu
+                                mediaButtonFocus = -1;
+                                selected = 0;
+                            } else {
+                                selected++;
+                                if (selected >= static_cast<int>(options.size())) {
+                                    // Go to media controls
+                                    selected = -1;
+                                    mediaButtonFocus = 1;
+                                }
+                            }
                             playSound(400, 20);
                             needRedraw = true;
                         } else if (key == VK_RETURN) {
-                            playSound(800, 50);
-                            return selected + 1;
+                            if (mediaButtonFocus != -1) {
+                                // Execute Media Action
+                                if (mediaButtonFocus == 0) { // Prev
+                                    stopMusic();
+                                    if (!playlist.empty()) currentSongIndex = (currentSongIndex - 1 + playlist.size()) % playlist.size();
+                                    playMusic();
+                                } else if (mediaButtonFocus == 1) { // Play/Pause
+                                    togglePauseMusic();
+                                } else if (mediaButtonFocus == 2) { // Next
+                                    nextMusic();
+                                }
+                                playSound(400, 20);
+                                needRedraw = true;
+                            } else {
+                                playSound(800, 50);
+                                return selected + 1;
+                            }
                         } else if (key == VK_RIGHT) {
-                            sidebarPage++;
+                            if (mediaButtonFocus != -1) {
+                                mediaButtonFocus = (mediaButtonFocus + 1) % 3;
+                            } else {
+                                sidebarPage++;
+                            }
                             playSound(400, 20);
                             needRedraw = true;
                         } else if (key == VK_LEFT) {
-                            sidebarPage--;
+                            if (mediaButtonFocus != -1) {
+                                mediaButtonFocus = (mediaButtonFocus - 1 + 3) % 3;
+                            } else {
+                                sidebarPage--;
+                            }
                             playSound(400, 20);
                             needRedraw = true;
                         }
@@ -600,6 +865,28 @@ namespace RetroUI {
                                     sidebarPage++;
                                     needRedraw = true;
                                 }
+                            }
+                        }
+
+                        // Check Media Player Controls
+                        int mediaY = CONSOLE_HEIGHT - 1;
+                        if (mer.dwMousePosition.Y == mediaY) {
+                            int sep2 = CONTENT_WIDTH - 45;
+                            // Layout: Title(13) + Waves(7) + Buttons
+                            int btnStart = sep2 + 2 + 13 + 7; 
+                            
+                            int mx = mer.dwMousePosition.X;
+                            if (mx >= btnStart && mx <= btnStart + 3) { // Prev
+                                playSound(400, 20);
+                                // prevMusic logic (simple decrement)
+                                stopMusic();
+                                if (!playlist.empty()) currentSongIndex = (currentSongIndex - 1 + playlist.size()) % playlist.size();
+                                playMusic();
+                                needRedraw = true;
+                            } else if (mx >= btnStart + 5 && mx <= btnStart + 8) { // Play/Pause
+                                playSound(400, 20); togglePauseMusic(); needRedraw = true;
+                            } else if (mx >= btnStart + 10 && mx <= btnStart + 13) { // Next
+                                playSound(400, 20); nextMusic(); needRedraw = true;
                             }
                         }
                     }
