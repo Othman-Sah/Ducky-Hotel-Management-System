@@ -37,8 +37,12 @@ namespace RetroUI {
         DWORD dwInMode = 0;
         GetConsoleMode(hIn, &dwInMode);
         dwInMode |= ENABLE_MOUSE_INPUT;
+        dwInMode |= ENABLE_EXTENDED_FLAGS;
         dwInMode &= ~ENABLE_QUICK_EDIT_MODE;
-        SetConsoleMode(hIn, dwInMode);
+        if (!SetConsoleMode(hIn, dwInMode)) {
+            // Optional: You can log an error here if SetConsoleMode fails
+            // For example: std::cerr << "Failed to set console mode." << std::endl;
+        }
 
         COORD largeBuffer = {400, 150};
         SetConsoleScreenBufferSize(hOut, largeBuffer);
