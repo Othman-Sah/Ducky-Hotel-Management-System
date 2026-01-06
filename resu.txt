@@ -1,0 +1,137 @@
+# Project Report: Hotel Management System (Simplified)
+
+This document explains the functions of the Hotel Management System in plain language. It describes what each part of the program does for the user.
+
+## File: main.cpp
+- **`int main()`**
+  - **Location:** `main.cpp`, line 12
+  - **Description:** This is the start button of the program. It turns everything on, loads the hotel data, and shows the main menu.
+
+## File: Hotel.cpp
+- **`Hotel::Hotel(...)`**
+  - **Location:** `Hotel.cpp`, line 9
+  - **Description:** Creates the hotel in the system and gives it a name.
+- **`Hotel::ajouterChambre(...)`**
+  - **Location:** `Hotel.cpp`, line 19
+  - **Description:** Adds a new room to the hotel so it can be booked.
+- **`Hotel::afficherToutesChambres()`**
+  - **Location:** `Hotel.cpp`, line 23
+  - **Description:** Shows a list of every room and tells you if it's free or busy.
+- **`Hotel::reserverChambre(...)`**
+  - **Location:** `Hotel.cpp`, line 44
+  - **Description:** Books a room for a guest and saves the booking so it isn't lost.
+- **`Hotel::libererChambre(...)`**
+  - **Location:** `Hotel.cpp`, line 53
+  - **Description:** Checks a guest out, calculates their final bill, and makes the room free again.
+- **`Hotel::saveReservations()`**
+  - **Location:** `Hotel.cpp`, line 129
+  - **Description:** Saves all the current bookings to a file on the computer.
+- **`Hotel::loadReservations()`**
+  - **Location:** `Hotel.cpp`, line 144
+  - **Description:** Reads the saved bookings file when the program starts so no data is lost.
+
+## File: Room.cpp
+- **`Room::Room(...)`**
+  - **Location:** `Room.cpp`, line 5
+  - **Description:** Sets up a specific room with its number and price.
+- **`Room::reserverChambre(...)`**
+  - **Location:** `Room.cpp`, line 16
+  - **Description:** Marks a room as "Occupied" and writes down the guest's name.
+- **`Room::libererChambre()`**
+  - **Location:** `Room.cpp`, line 25
+  - **Description:** Marks a room as "Available" and clears the guest's name.
+
+## File: User.cpp
+- **`User::checkPassword(...)`**
+  - **Location:** `User.cpp`, line 14
+  - **Description:** Checks if the password typed in matches the user's actual password.
+
+## File: Authentication.cpp
+- **`Authentication::login(...)`**
+  - **Location:** `Authentication.cpp`, line 23
+  - **Description:** Checks if the username and password are correct to let the user log in.
+- **`Authentication::addUser(...)`**
+  - **Location:** `Authentication.cpp`, line 31
+  - **Description:** Creates a new user account and saves it to a file.
+
+## File: Bill.cpp
+- **`Bill::generateBill()`**
+  - **Location:** `Bill.cpp`, line 25
+  - **Description:** Calculates the total cost of the stay and shows the bill on the screen.
+- **`Bill::saveToFile()`**
+  - **Location:** `Bill.cpp`, line 44
+  - **Description:** Saves the final bill as a text file on the computer for records.
+
+## File: RetroUI.cpp
+- **`drawTicker(...)`**
+  - **Location:** `RetroUI.cpp`, line 9
+  - **Description:** Draws the scrolling news bar, weather info, and music controls at the bottom of the screen.
+- **`drawBigClock(...)`**
+  - **Location:** `RetroUI.cpp`, line 62
+  - **Description:** Shows the current time in large, digital-style numbers.
+- **`drawLayout(...)`**
+  - **Location:** `RetroUI.cpp`, line 84
+  - **Description:** Draws the main screen borders, the title, and the sidebar menu.
+- **`drawWorld(...)`**
+  - **Location:** `RetroUI.cpp`, line 156
+  - **Description:** Displays a cool spinning globe animation on the side of the screen.
+- **`textInput(...)`**
+  - **Location:** `RetroUI.cpp`, line 190
+  - **Description:** Shows a box asking the user to type something, like a name or password.
+- **`drawInfoBox(...)`**
+  - **Location:** `RetroUI.cpp`, line 196
+  - **Description:** Shows a message to the user inside a box in the middle of the screen.
+- **`drawModal(...)`**
+  - **Location:** `RetroUI.cpp`, line 205
+  - **Description:** Draws a pop-up window frame for important actions.
+- **`drawTable(...)`**
+  - **Location:** `RetroUI.cpp`, line 215
+  - **Description:** Displays a list of information organized neatly in rows and columns.
+- **`showMenu(...)`**
+  - **Location:** `RetroUI.cpp`, line 220
+  - **Description:** Shows a list of choices and lets the user pick one using the arrow keys.
+- **`showMapViewer(...)`**
+  - **Location:** `RetroUI.cpp`, line 266
+  - **Description:** Lets the user look at visual maps of the hotel floors, parking lot, and restaurant.
+
+## File: RetroCore.cpp
+- **`setupConsole()`**
+  - **Location:** `RetroCore.cpp`, line 27
+  - **Description:** Sets up the window size and colors so the program looks correct.
+- **`clear()`**
+  - **Location:** `RetroCore.cpp`, line 81
+  - **Description:** Wipes the screen clean to draw something new.
+- **`gotoxy(...)`**
+  - **Location:** `RetroCore.cpp`, line 82
+  - **Description:** Moves the cursor to a specific spot on the screen to draw text there.
+- **`playSound(...)`**
+  - **Location:** `RetroCore.cpp`, line 83
+  - **Description:** Makes a beep sound for effects.
+- **`center(...)`**
+  - **Location:** `RetroCore.cpp`, line 85
+  - **Description:** Helps position text exactly in the middle of the screen.
+- **`typeWrite(...)`**
+  - **Location:** `RetroCore.cpp`, line 92
+  - **Description:** Prints text one letter at a time to look like it's being typed.
+- **`bootSequence()`**
+  - **Location:** `RetroCore.cpp`, line 96
+  - **Description:** Plays the "starting up" animation that looks like an old computer booting.
+- **`updateTheme()`**
+  - **Location:** `RetroCore.cpp`, line 108
+  - **Description:** Changes the screen colors automatically based on if it is day or night.
+
+## File: HotelServices.h
+- **`ParkingManager::occupySpot()`**
+  - **Location:** `HotelServices.h`, line 108
+  - **Description:** Reduces the number of free parking spots by one.
+- **`RestaurantManager::addItem(...)`**
+  - **Location:** `HotelServices.h`, line 120
+  - **Description:** Adds a new food or drink item to the restaurant menu.
+
+## File: AdminInterface.h
+- **`AdminUI::showDashboard(...)`**
+  - **Location:** `AdminInterface.h`, line 16
+  - **Description:** Shows the main screen for the manager with hotel statistics.
+- **`AdminUI::manageRooms(...)`**
+  - **Location:** `AdminInterface.h`, line 35
+  - **Description:** Lets the manager handle room bookings and check-outs.

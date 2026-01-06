@@ -1,0 +1,825 @@
+# Project Report: Hotel Management System
+
+This document provides a detailed analysis of the C++ Hotel Management System project. Each file is examined to document its purpose, and each function is described with its role and location.
+
+## File: main.cpp
+
+This is the main entry point of the application. It initializes the system, sets up initial data, and runs the main event loop.
+
+### Functions:
+
+- **`int main()`**
+  - **Location:** `main.cpp`, line 12
+  - **Description:**
+    - Initializes the retro-style console UI.
+    - Creates instances of the `Authentication` and `Hotel` classes.
+    - Initializes the `Restaurant` menu and the `ParkingManager` with a set number of spots.
+    - Populates the hotel with a predefined set of rooms of different types and prices.
+    - Loads any existing reservations from storage.
+    - Enters the main application loop, which presents the user with three options:
+      1.  **LOGIN:** Initiates the login sequence. If successful, it directs the user to either the Admin or User dashboard based on their role.
+      2.  **HOTEL MAPS:** Gathers data about rooms, parking, and restaurant tables and displays a visual map of the hotel facilities.
+      3.  **EXIT SYSTEM:** Terminates the application.
+
+## File: Hotel.h
+
+This header file defines the `Hotel` class, which serves as the central management class for the entire hotel. It encapsulates the hotel's data and operations.
+
+### Class: `Hotel`
+
+- **`Hotel(const string& nom)`**
+  - **Location:** `Hotel.h`, line 15
+  - **Description:** Constructor that initializes a new `Hotel` object with a given name.
+
+- **`~Hotel()`**
+  - **Location:** `Hotel.h`, line 16
+  - **Description:** Destructor for the `Hotel` class.
+
+- **`ajouterChambre(int numero, const string& type, double prix)`**
+  - **Location:** `Hotel.h`, line 18
+  - **Description:** Adds a new room to the hotel's list of rooms.
+
+- **`afficherToutesChambres() const`**
+  - **Location:** `Hotel.h`, line 19
+  - **Description:** Displays the status and details of all rooms in the hotel.
+
+- **`afficherChambresDisponibles() const`**
+  - **Location:** `Hotel.h`, line 20
+  - **Description:** Displays only the rooms that are currently available for booking.
+
+- **`reserverChambre(int numeroChambre, const string& nomClient, int nuits)`**
+  - **Location:** `Hotel.h`, line 21
+  - **Description:** Handles the logic for reserving a specific room for a client for a certain number of nights.
+
+- **`libererChambre(int numeroChambre)`**
+  - **Location:** `Hotel.h`, line 22
+  - **Description:** Marks a room as available after a client has checked out.
+
+- **`rechercherChambre(int numeroChambre) const`**
+  - **Location:** `Hotel.h`, line 23
+  - **Description:** Searches for and displays the details of a specific room by its number.
+
+- **`addService(HotelService* service)`**
+  - **Location:** `Hotel.h`, line 25
+  - **Description:** Adds a new hotel-wide service (e.g., Wi-Fi).
+
+- **`addServiceToRoom(int roomNumber, HotelService* service)`**
+  - **Location:** `Hotel.h`, line 26
+  - **Description:** Assigns a specific service (e.g., room service) to a particular room.
+
+- **`displayServices() const`**
+  - **Location:** `Hotel.h`, line 27
+  - **Description:** Displays all the services offered by the hotel.
+
+- **`findRoom(int roomNumber)`**
+  - **Location:** `Hotel.h`, line 28
+  - **Description:** Finds and returns a pointer to a `Room` object based on its number.
+
+- **`getOccupiedRoomsCount() const`**
+  - **Location:** `Hotel.h`, line 30
+  - **Description:** Returns the total count of currently occupied rooms.
+
+- **`getAvailableRoomsCount() const`**
+  - **Location:** `Hotel.h`, line 31
+  - **Description:** Returns the total count of currently available rooms.
+
+- **`getTotalRevenue() const`**
+  - **Location:** `Hotel.h`, line 32
+  - **Description:** Calculates and returns the total revenue generated from all occupied rooms.
+
+- **`saveReservations() const`**
+  - **Location:** `Hotel.h`, line 34
+  - **Description:** Persists the current state of all room reservations to a file.
+
+- **`loadReservations()`**
+  - **Location:** `Hotel.h`, line 35
+  - **Description:** Loads the room reservation data from a file into the application at startup.
+
+- **`getRoomStatusList() const`**
+  - **Location:** `Hotel.h`, line 37
+  - **Description:** Returns a vector of strings, with each string summarizing the status of a room.
+
+- **`getRoomListDetails(bool onlyAvailable) const`**
+  - **Location:** `Hotel.h`, line 38
+  - **Description:** Returns a vector of strings containing detailed information about rooms. Can be filtered to show only available rooms.
+
+- **`prepareBill(int roomNumber)`**
+  - **Location:** `Hotel.h`, line 39
+  - **Description:** Creates and returns a `Bill` object for a specific room, likely calculating the total charges.
+
+- **`getChambres() const`**
+  - **Location:** `Hotel.h`, line 40
+  - **Description:** Returns a constant reference to the vector of `Room` objects, allowing read-only access to the list of rooms.
+
+## File: Hotel.cpp
+
+This file contains the implementation of the `Hotel` class methods.
+
+### Functions:
+
+- **`Hotel::Hotel(const std::string& nom)`**
+  - **Location:** `Hotel.cpp`, line 9
+  - **Description:** Initializes the `nomHotel` member and prints a welcome message.
+
+- **`Hotel::~Hotel()`**
+  - **Location:** `Hotel.cpp`, line 13
+  - **Description:** Destructor that deallocates memory for all `HotelService` objects to prevent memory leaks.
+
+- **`Hotel::ajouterChambre(...)`**
+  - **Location:** `Hotel.cpp`, line 19
+  - **Description:** Instantiates a `Room` object and adds it to the `chambres` vector.
+
+- **`Hotel::afficherToutesChambres() const`**
+  - **Location:** `Hotel.cpp`, line 23
+  - **Description:** Iterates through the `chambres` vector and calls `afficherInfo()` for each room.
+
+- **`Hotel::afficherChambresDisponibles() const`**
+  - **Location:** `Hotel.cpp`, line 30
+  - **Description:** Displays information only for rooms that are marked as available.
+
+- **`Hotel::reserverChambre(...)`**
+  - **Location:** `Hotel.cpp`, line 44
+  - **Description:** Finds the specified room, calls its `reserverChambre` method, and then calls `saveReservations()` to persist the change.
+
+- **`Hotel::libererChambre(...)`**
+  - **Location:** `Hotel.cpp`, line 53
+  - **Description:** When a room is checked out, it generates a bill, saves it, frees the room, and persists the new state.
+
+- **`Hotel::rechercherChambre(...) const`**
+  - **Location:** `Hotel.cpp`, line 68
+  - **Description:** Finds a room by its number and displays its details.
+
+- **`Hotel::addService(...)`**
+  - **Location:** `Hotel.cpp`, line 79
+  - **Description:** Adds a pointer to a `HotelService` to the hotel's main `services` list.
+
+- **`Hotel::addServiceToRoom(...)`**
+  - **Location:** `Hotel.cpp`, line 83
+  - **Description:** Assigns a service to a specific room and also adds it to the main `services` list for memory management.
+
+- **`Hotel::displayServices() const`**
+  - **Location:** `Hotel.cpp`, line 94
+  - **Description:** Iterates through all registered services and displays their details.
+
+- **`Hotel::findRoom(...)`**
+  - **Location:** `Hotel.cpp`, line 101
+  - **Description:** An internal helper method to find a room by its number. Returns a pointer to the `Room` object or `nullptr`.
+
+- **`Hotel::getOccupiedRoomsCount() const`**
+  - **Location:** `Hotel.cpp`, line 109
+  - **Description:** Uses `std::count_if` with a lambda to efficiently count occupied rooms.
+
+- **`Hotel::getAvailableRoomsCount() const`**
+  - **Location:** `Hotel.cpp`, line 113
+  - **Description:** Uses `std::count_if` with a lambda to efficiently count available rooms.
+
+- **`Hotel::getTotalRevenue() const`**
+  - **Location:** `Hotel.cpp`, line 117
+  - **Description:** Calculates the hotel's total revenue by summing the charges for occupied rooms and all services used.
+
+- **`Hotel::saveReservations() const`**
+  - **Location:** `Hotel.cpp`, line 129
+  - **Description:** Serializes the state of all occupied rooms and their associated services to the `reservations.txt` file.
+
+- **`Hotel::loadReservations()`**
+  - **Location:** `Hotel.cpp`, line 144
+  - **Description:** Reads the `reservations.txt` file at startup to restore the state of reservations and dynamically allocates services based on the stored service type.
+
+- **`Hotel::getRoomStatusList() const`**
+  - **Location:** `Hotel.cpp`, line 193
+  - **Description:** Sorts rooms by number and generates a formatted list of strings, grouped by floor, to show the status of each room.
+
+- **`Hotel::getRoomListDetails(...) const`**
+  - **Location:** `Hotel.cpp`, line 209
+  - **Description:** Generates a detailed list of strings for rooms, with the option to filter for only available rooms.
+
+- **`Hotel::prepareBill(...)`**
+  - **Location:** `Hotel.cpp`, line 225
+  - **Description:** Creates a `Bill` object for a room and adds all associated services to it before returning the bill.
+
+- **`Hotel::getChambres() const`**
+  - **Location:** `Hotel.cpp`, line 233
+  - **Description:** Provides read-only access to the internal vector of `Room` objects.
+
+## File: Room.h
+
+This header file defines the `Room` class, which encapsulates all the data and functionality related to a single hotel room.
+
+### Class: `Room`
+
+- **`Room(int numero, string type, double prix)`**
+  - **Location:** `Room.h`, line 20
+  - **Description:** Constructor to initialize a `Room` object with its number, type, and price. It typically sets the room to be available by default.
+
+- **`getNumeroChambre() const`**
+  - **Location:** `Room.h`, line 22
+  - **Description:** An inline getter that returns the room number.
+
+- **`getTypeChambre() const`**
+  - **Location:** `Room.h`, line 23
+  - **Description:** An inline getter that returns the type of the room (e.g., "Simple", "Suite").
+
+- **`getPrix() const`**
+  - **Location:** `Room.h`, line 24
+  - **Description:** An inline getter that returns the price per night for the room.
+
+- **`getDisponibilite() const`**
+  - **Location:** `Room.h`, line 25
+  - **Description:** An inline getter that returns `true` if the room is available and `false` otherwise.
+
+- **`getNomClient() const`**
+  - **Location:** `Room.h`, line 26
+  - **Description:** An inline getter that returns the name of the client currently occupying the room.
+
+- **`getNbNuits() const`**
+  - **Location:** `Room.h`, line 27
+  - **Description:** An inline getter that returns the number of nights the room is booked for.
+
+- **`reserverChambre(const string& nom, int nuits)`**
+  - **Location:** `Room.h`, line 29
+  - **Description:** Sets the room's status to unavailable, records the client's name and the number of nights.
+
+- **`libererChambre()`**
+  - **Location:** `Room.h`, line 30
+  - **Description:** Resets the room's status to available and clears the client's information.
+
+- **`afficherInfo() const`**
+  - **Location:** `Room.h`, line 31
+  - **Description:** Displays the detailed information of the room, including its status.
+
+- **`addService(HotelService* service)`**
+  - **Location:** `Room.h`, line 32
+  - **Description:** Adds a pointer to a `HotelService` object to the list of services being used by the room's occupant.
+
+- **`getServicesUtilises() const`**
+  - **Location:** `Room.h`, line 33
+  - **Description:** Returns a constant reference to the vector of services used by the room.
+
+## File: Room.cpp
+
+This file provides the implementation of the `Room` class methods.
+
+### Functions:
+
+- **`Room::Room(...)`**
+  - **Location:** `Room.cpp`, line 5
+  - **Description:** The constructor initializes a `Room` object using a member initializer list, setting the room's properties and defaulting its status to available.
+
+- **`Room::addService(...)`**
+  - **Location:** `Room.cpp`, line 8
+  - **Description:** Appends a `HotelService` pointer to the `servicesUtilises` vector, associating a new service with the room.
+
+- **`Room::getServicesUtilises() const`**
+  - **Location:** `Room.cpp`, line 12
+  - **Description:** Returns a read-only reference to the vector of services associated with the room.
+
+- **`Room::reserverChambre(...)`**
+  - **Location:** `Room.cpp`, line 16
+  - **Description:** Checks if the room is available. If so, it updates the room's state to occupied, records the client's name and duration of stay, and confirms the reservation.
+
+- **`Room::libererChambre()`**
+  - **Location:** `Room.cpp`, line 25
+  - **Description:** Checks if the room is occupied. If so, it resets the room's state to available, clears client data, and empties the list of used services for the next guest. The comment indicates that service pointer memory is managed elsewhere.
+
+- **`Room::afficherInfo() const`**
+  - **Location:** `Room.cpp`, line 36
+  - **Description:** Prints a formatted string to the console with all the details of the room, including client information if it is occupied.
+
+## File: User.h
+
+This header file defines the data structures for user accounts and roles within the system.
+
+### `enum class Role`
+- **Location:** `User.h`, line 6
+- **Description:** A strongly-typed enumeration that defines the access control levels for users.
+- **Values:**
+  - `USER`: For standard users (clients).
+  - `ADMIN`: For system administrators with elevated privileges.
+
+### Class: `User`
+
+- **`User(const std::string&, const std::string&, Role)`**
+  - **Location:** `User.h`, line 12
+  - **Description:** Constructor to create a new `User` object with a username, password, and role.
+
+- **`getUsername() const`**
+  - **Location:** `User.h`, line 14
+  - **Description:** A getter method that returns the user's username.
+
+- **`getRole() const`**
+  - **Location:** `User.h`, line 15
+  - **Description:** A getter method that returns the user's `Role` (either `USER` or `ADMIN`).
+
+- **`checkPassword(const std::string&) const`**
+  - **Location:** `User.h`, line 16
+  - **Description:** A method to validate a given password against the one stored for the user. The comment in the code notes that for security, passwords should be hashed in a real application.
+
+## File: User.cpp
+
+This file contains the implementation for the `User` class.
+
+### Functions:
+
+- **`User::User(...)`**
+  - **Location:** `User.cpp`, line 3
+  - **Description:** The constructor uses a member initializer list to efficiently assign the `username`, `password`, and `role` to the `User` object upon creation.
+
+- **`User::getUsername() const`**
+  - **Location:** `User.cpp`, line 6
+  - **Description:** Returns the private `username` member variable.
+
+- **`User::getRole() const`**
+  - **Location:** `User.cpp`, line 10
+  - **Description:** Returns the private `role` member variable.
+
+- **`User::checkPassword(...) const`**
+  - **Location:** `User.cpp`, line 14
+  - **Description:** Compares the provided password with the user's stored password and returns `true` if they match, `false` otherwise. This is a basic, insecure implementation.
+
+## File: Authentication.h
+
+This header file defines the `Authentication` class, which is responsible for managing user accounts and the login process.
+
+### Class: `Authentication`
+
+- **`Authentication()`**
+  - **Location:** `Authentication.h`, line 9
+  - **Description:** The constructor for the `Authentication` class, likely responsible for initializing the user database.
+
+- **`login(const std::string&, const std::string&)`**
+  - **Location:** `Authentication.h`, line 10
+  - **Description:** This function takes a username and password, validates them against the list of users, and returns a pointer to the `User` object if successful. Otherwise, it returns `nullptr`.
+
+- **`addUser(const std::string&, const std::string&, Role)`**
+  - **Location:** `Authentication.h`, line 11
+  - **Description:** This function adds a new `User` to the system's user list.
+
+## File: Authentication.cpp
+
+This file implements the functionality for the `Authentication` class.
+
+### Functions:
+
+- **`Authentication::Authentication()`**
+  - **Location:** `Authentication.cpp`, line 5
+  - **Description:** The constructor handles the loading of user data. It reads from `users.txt`, parsing each line to reconstruct the list of `User` objects. If the file cannot be opened (e.g., on first run), it calls `addUser` to create default admin and user accounts.
+
+- **`Authentication::login(...)`**
+  - **Location:** `Authentication.cpp`, line 23
+  - **Description:** This method iterates through the in-memory vector of `User` objects. It finds a user with a matching username and then validates the password using the `User::checkPassword` method. It returns a pointer to the matching `User` object on success or `nullptr` on failure.
+
+- **`Authentication::addUser(...)`**
+  - **Location:** `Authentication.cpp`, line 31
+  - **Description:** This method adds a new user to the system. It adds the `User` object to the `users` vector for the current session and also appends the new user's details to `users.txt` to ensure the user is persisted for future sessions.
+
+## File: HotelServices.h
+
+This file defines the hierarchy of services available at the hotel. It uses an abstract base class `HotelService` to establish a polymorphic interface for different types of services.
+
+### Class: `HotelService` (Abstract)
+
+- **`HotelService(const std::string&, double)`**
+  - **Location:** `HotelServices.h`, line 11
+  - **Description:** Constructor for the base class, initializing the service's name and price.
+
+- **`virtual ~HotelService() = default`**
+  - **Location:** `HotelServices.h`, line 12
+  - **Description:** A virtual destructor ensures that derived service objects are correctly deallocated.
+
+- **`virtual void bookService() = 0`**
+  - **Location:** `HotelServices.h`, line 14
+  - **Description:** A pure virtual function that must be implemented by all derived service classes. This would contain the logic for booking or using the service.
+
+- **`virtual void displayService() const`**
+  - **Location:** `HotelServices.h`, line 15
+  - **Description:** A virtual function to print the details of the service to the console.
+
+- **`virtual std::string getServiceType() const = 0`**
+  - **Location:** `HotelServices.h`, line 16
+  - **Description:** A pure virtual function for retrieving the type of the service (e.g., "Parking"), used for serialization and identification.
+
+- **`virtual std::string getServiceData() const = 0`**
+  - **Location:** `HotelServices.h`, line 17
+  - **Description:** A pure virtual function for retrieving service-specific data (like number of days or treatment type) for serialization purposes.
+
+### Derived Service Classes
+
+- **`Parking`:** Inherits from `HotelService`. Represents parking services, storing the number of days.
+- **`Restaurant`:** Inherits from `HotelService`. Represents a restaurant order. Manages a static menu for all restaurant instances.
+- **`Spa`:** Inherits from `HotelService`. Represents a spa treatment, storing the treatment name.
+- **`Gym`:** Inherits from `HotelService`. Represents gym usage, storing the number of hours.
+- **`RoomService`:** Inherits from `HotelService`. Represents a food order delivered to a room.
+
+### Manager Classes
+
+- **`class ParkingManager`**
+  - **Location:** `HotelServices.h`, line 105
+  - **Description:** A static class that tracks the global state of the parking lot.
+  - **`initialize(int)`:** Sets the total number of parking spots.
+  - **`occupySpot()` / `releaseSpot()`:** Increments or decrements the count of occupied spots.
+  - **`getAvailableSpots()` / `getTotalSpots()`:** Provide information on parking availability.
+
+- **`class RestaurantManager`**
+  - **Location:** `HotelServices.h`, line 116
+  - **Description:** A static class designed to manage the restaurant menu, providing functions to add items and update prices.
+
+## File: HotelServices.cpp
+
+This file provides the implementations for the methods of the various service and manager classes defined in `HotelServices.h`.
+
+### `HotelService` Implementation
+- **`HotelService::HotelService(...)` (Line 8):** Implements the base class constructor.
+- **`HotelService::displayService() const` (Line 11):** Provides a default way to display service info.
+- **`HotelService::getServiceName() const` (Line 15):** Implements the getter for the service name.
+- **`HotelService::getPrice() const` (Line 19):** Implements the getter for the service price.
+
+### `Parking` Implementation
+- **`Parking::Parking(...)` (Line 23):** Constructor calculates the price based on the number of days.
+- **`Parking::displayService() const` (Line 31):** Overridden to display parking-specific details.
+- **`Parking::getServiceData() const` (Line 35):** Returns the number of days as a string for serialization.
+
+### `Restaurant` Implementation
+- **`Restaurant::initializeMenu()` (Line 40):** Populates the static `menu` map with default items.
+- **`Restaurant::displayMenu()` (Line 47):** Prints the formatted menu to the console.
+
+### `RoomService` Implementation
+- **`RoomService::RoomService(...)` (Line 59):** Constructor calculates the total price from the `MenuItem` vector.
+- **`RoomService::displayService() const` (Line 68):** Overridden to list the items ordered.
+- **`RoomService::getServiceData() const` (Line 73):** Serializes the order details into a delimited string for saving.
+
+### `Spa` and `Gym` Implementations
+- These classes follow a similar pattern, with constructors calculating the price and overridden methods providing specific details for display and serialization.
+
+### Manager Implementations
+- **`ParkingManager` (Line 113):** Defines and initializes the static variables for tracking parking spots. The methods provide the logic for managing spot availability.
+- **`RestaurantManager` (Line 129):** Implements the methods to modify the static `Restaurant::menu`, allowing for dynamic menu updates.
+
+## File: Bill.h
+
+This header file defines the `Bill` class, which is used to calculate and manage the charges for a guest's stay.
+
+### Class: `Bill`
+
+- **`Bill(const Room& room)`**
+  - **Location:** `Bill.h`, line 10
+  - **Description:** The constructor takes a constant reference to a `Room` object, linking the bill directly to a specific room and its details.
+
+- **`void addService(HotelService* service)`**
+  - **Location:** `Bill.h`, line 11
+  - **Description:** Adds a pointer to a `HotelService` object to the bill, accumulating all the services used by the guest.
+
+- **`void generateBill() const`**
+  - **Location:** `Bill.h`, line 12
+  - **Description:** This function is responsible for calculating the total charges and printing a formatted, itemized bill to the console.
+
+- **`double getTotalAmount() const`**
+  - **Location:** `Bill.h`, line 13
+  - **Description:** Calculates and returns the final total amount for the bill, including the room charges and all added services.
+
+- **`void saveToFile() const`**
+  - **Location:** `Bill.h`, line 14
+  - **Description:** Persists the generated bill to a text file, creating a record of the transaction.
+
+- **`std::vector<std::string> getBillLines() const`**
+  - **Location:** `Bill.h`, line 15
+  - **Description:** Generates the itemized bill as a vector of strings, suitable for being displayed in a UI component.
+
+## File: Bill.cpp
+
+This file contains the implementation of the `Bill` class.
+
+### Functions:
+
+- **`Bill::Bill(const Room&)`**
+  - **Location:** `Bill.cpp`, line 10
+  - **Description:** The constructor initializes the `Bill` object with a reference to the `Room` it is associated with.
+
+- **`void Bill::addService(HotelService*)`**
+  - **Location:** `Bill.cpp`, line 12
+  - **Description:** Adds a service to the bill's internal list of services.
+
+- **`double Bill::getTotalAmount() const`**
+  - **Location:** `Bill.cpp`, line 16
+  - **Description:** Calculates the total bill amount by summing the room charge (price * nights) and the price of all added services. It uses `std::accumulate` for a concise sum of the service prices.
+
+- **`void Bill::generateBill() const`**
+  - **Location:** `Bill.cpp`, line 25
+  - **Description:** Prints a formatted, itemized bill to the standard output.
+
+- **`void Bill::saveToFile() const`**
+  - **Location:** `Bill.cpp`, line 44
+  - **Description:** Saves a detailed, formatted bill to a text file. It creates a "billing" directory if one doesn't exist and generates a unique filename based on the client's name and the current date. It also includes fine-grained details for certain service types, like itemizing a room service order.
+
+- **`std::vector<std::string> Bill::getBillLines() const`**
+  - **Location:** `Bill.cpp`, line 106
+  - **Description:** Constructs and returns a `std::vector<std::string>`, where each element is a pre-formatted line of the bill. This is a flexible method that allows the bill to be displayed in various UI contexts without being tied to `std::cout`.
+
+## File: AdminInterface.h
+
+This header-only file defines the user interface and logic for administrator-specific actions. All functions are contained within the `AdminUI` namespace and are declared `inline` to avoid multiple definition errors.
+
+### Namespace: `AdminUI`
+
+- **`showDashboard(Hotel& hotel)`**
+  - **Location:** `AdminInterface.h`, line 16
+  - **Description:** Displays a high-level overview of the hotel's status, including occupancy counts and estimated revenue, using the `RetroUI` library for rendering.
+
+- **`manageRooms(Hotel& hotel, Authentication& auth)`**
+  - **Location:** `AdminInterface.h`, line 35
+  - **Description:** Provides a sub-menu for room management. It allows an admin to view all rooms, force a reservation (which includes creating a new user account on the fly), and perform a check-out (which involves generating and previewing a bill).
+
+- **`manageRestaurant(Hotel& hotel)`**
+  - **Location:** `AdminInterface.h`, line 144
+  - **Description:** Provides an interface for managing the restaurant's menu. Admins can view the current menu, add new items to categories, and update the prices of existing items by interacting with the `RestaurantManager`.
+
+- **`manageParking()`**
+  - **Location:** `AdminInterface.h`, line 180
+  - **Description:** Displays current parking lot statistics (total and available spots) by fetching data from the `ParkingManager`.
+
+- **`dashboard(Hotel& hotel, User* user, Authentication& auth)`**
+  - **Location:** `AdminInterface.h`, line 189
+  - **Description:** This is the main function for the admin dashboard. It presents a menu of all available admin actions and calls the corresponding function based on the admin's selection. It serves as the primary navigation hub for administrators.
+
+## File: AuthUI.h
+
+This header-only file provides the UI for the authentication process.
+
+### Namespace: `AuthUI`
+
+- **`showLoginScreen(Authentication& auth)`**
+  - **Location:** `AuthUI.h`, line 9
+  - **Description:** This function manages the user login interface. It repeatedly prompts for a username and password, attempts to log in by calling `auth.login()`, and provides feedback to the user. On a successful login, it returns a pointer to the `User` object; otherwise, it displays an error and prompts again.
+
+## File: ConsoleUI.h
+
+This header-only file provides a collection of simple, `inline` functions for creating basic console UI elements. It appears to be a lightweight or possibly legacy UI component compared to the more feature-rich `RetroUI` library.
+
+### Namespace: `ConsoleUI`
+
+- **`drawHeader(const std::string& title)`**
+  - **Location:** `ConsoleUI.h`, line 10
+  - **Description:** Prints a simple, double-lined border with a title to the console.
+
+- **`drawMenu(const std::vector<std::string>& options)`**
+  - **Location:** `ConsoleUI.h`, line 17
+  - **Description:** Displays a vector of strings as a numbered menu within a simple bordered box and adds a prompt for user input.
+
+- **`drawInfoBox(const std::vector<std::string>& lines)`**
+  - **Location:** `ConsoleUI.h`, line 26
+  - **Description:** Renders a simple box containing multiple lines of text, suitable for displaying information or messages to the user.
+
+## File: MenuItem.h
+
+This simple header file defines a basic `struct` to hold data for a single menu item.
+
+### Struct: `MenuItem`
+- **Location:** `MenuItem.h`, line 6
+- **Description:** A plain data structure containing the `name` and `price` of an item. It is used by the `Restaurant` and `RoomService` classes.
+
+## File: UserInterface.h
+
+This header-only file defines the UI and logic for the standard client-facing dashboard. It is organized within the `UserUI` namespace and uses the `RetroUI` library for all rendering.
+
+### Namespace: `UserUI`
+
+- **`drawRestaurantMenu()`**
+  - **Location:** `UserInterface.h`, line 18
+  - **Description:** A helper function that renders the current restaurant menu to the screen.
+
+- **`orderRestaurant(Hotel& hotel)`**
+  - **Location:** `UserInterface.h`, line 31
+  - **Description:** An interactive screen that allows a user to build a room service order. It displays the menu, lets the user add items, shows a running total, and finally associates the order as a `RoomService` object with the user's room.
+
+- **`bookParking(Hotel& hotel)`**
+  - **Location:** `UserInterface.h`, line 107
+  - **Description:** An interface for booking a parking spot. It shows current availability and prompts the user for their room number and the number of days required.
+
+- **`bookSpaAndGym(Hotel& hotel)`**
+  - **Location:** `UserInterface.h`, line 137
+  - **Description:** A sub-menu that allows a user to either book a spa treatment or reserve gym time. It prompts for the necessary details for each service.
+
+- **`showUserInfo(Hotel& hotel, User* user)`**
+  - **Location:** `UserInterface.h`, line 167
+  - **Description:** Displays a summary of the user's current reservation. It finds the room associated with the user and shows details like check-in/out dates and a running total of all charges (room + services).
+
+- **`dashboard(Hotel& hotel, User* user)`**
+  - **Location:** `UserInterface.h`, line 214
+  - **Description:** The main entry point and navigation hub for the standard user dashboard. It presents a menu of all available client actions (view info, order services, etc.) and calls the appropriate functions.
+
+## File: RetroCore.h
+
+This header file declares the low-level, core components of the `RetroUI` library. It defines the global variables and fundamental functions for console manipulation.
+
+### Namespace: `RetroUI`
+
+- **Global Variables (Lines 8-32):** Declares `extern` variables for console dimensions, ANSI color codes, and special drawing symbols. The `extern` keyword indicates their definitions are in a `.cpp` file.
+- **`setupConsole()`**
+  - **Location:** `RetroCore.h`, line 35
+  - **Description:** Prepares the console window for the application. This includes setting the size, enabling color output, and hiding the cursor.
+- **`clear()`**
+  - **Location:** `RetroCore.h`, line 36
+  - **Description:** Clears the console screen.
+- **`gotoxy(int x, int y)`**
+  - **Location:** `RetroCore.h`, line 37
+  - **Description:** Moves the console cursor to a specified `(x, y)` coordinate.
+- **`center(const std::string&, int)`**
+  - **Location:** `RetroCore.h`, line 38
+  - **Description:** A utility function to center-align text within a given width.
+- **`playSound(int, int)`**
+  - **Location:** `RetroCore.h`, line 39
+  - **Description:** Generates simple audio tones.
+- **`typeWrite(const std::string&, int)`**
+  - **Location:** `RetroCore.h`, line 40
+  - **Description:** Displays text with a character-by-character "typewriter" effect.
+- **`bootSequence()`**
+  - **Location:** `RetroCore.h`, line 41
+  - **Description:** Declares the function that runs the cosmetic startup animation.
+- **`updateTheme()`**
+  - **Location:** `RetroCore.h`, line 42
+  - **Description:** Declares the function that adjusts the UI color palette based on the time of day.
+
+## File: RetroCore.cpp
+
+This file contains the Windows-specific implementation of the core `RetroUI` functions.
+
+### Namespace: `RetroUI`
+
+- **Global Variable Definitions (Lines 6-25):** Defines and initializes the `extern` global variables from the header, setting default console dimensions and the string values for ANSI color codes.
+- **`setupConsole()`**
+  - **Location:** `RetroCore.cpp`, line 27
+  - **Description:** This function contains significant platform-specific code to configure the Windows console. It enables ANSI escape code processing, sets the code page to UTF-8, maximizes the window, removes scrollbars and the maximize button, and hides the cursor.
+- **`clear()`**
+  - **Location:** `RetroCore.cpp`, line 81
+  - **Description:** Implements a screen clear using ANSI escape codes.
+- **`gotoxy(int, int)`**
+  - **Location:** `RetroCore.cpp`, line 82
+  - **Description:** Implements cursor positioning using ANSI escape codes.
+- **`playSound(int, int)`**
+  - **Location:** `RetroCore.cpp`, line 83
+  - **Description:** A wrapper around the Windows `Beep()` API function.
+- **`center(const std::string&, int)`**
+  - **Location:** `RetroCore.cpp`, line 85
+  - **Description:** The implementation for the text-centering utility.
+- **`typeWrite(const std::string&, int)`**
+  - **Location:** `RetroCore.cpp`, line 92
+  - **Description:** Implements the typewriter effect using `Sleep()` between character prints.
+- **`bootSequence()`**
+  - **Location:** `RetroCore.cpp`, line 96
+  - **Description:** Implements the cosmetic startup animation with text and a memory check simulation.
+- **`updateTheme()`**
+  - **Location:** `RetroCore.cpp`, line 108
+  - **Description:** Checks the system time and reassigns the global color variables to a different palette if it is currently nighttime.
+
+## File: RetroMaps.h
+
+This header file declares the data structures and functions responsible for drawing the graphical map-like views in the console.
+
+### Namespace: `RetroUI`
+
+- **Data Structures (Lines 8-10):** Defines simple `struct`s (`RoomData`, `ParkingData`, `TableData`) to pass display information to the drawing functions, decoupling them from the main hotel logic classes.
+- **`drawFloorPlan(...)`**
+  - **Location:** `RetroMaps.h`, line 12
+  - **Description:** Declares the function to draw the hotel room floor plan.
+- **`drawParkingMap(...)`**
+  - **Location:** `RetroMaps.h`, line 13
+  - **Description:** Declares the function to draw the parking lot map.
+- **`drawRestaurantMap(...)`**
+  - **Location:** `RetroMaps.h`, line 14
+  - **Description:** Declares the function to draw the restaurant table layout.
+- **`drawEntranceMap()`**
+  - **Location:** `RetroMaps.h`, line 15
+  - **Description:** Declares the function to draw the hotel entrance view.
+
+## File: RetroMaps.cpp
+
+This file implements the ASCII-art-based map drawing functions for the `RetroUI` library.
+
+### Namespace: `RetroUI`
+
+- **`drawFloorPlan(...)`**
+  - **Location:** `RetroMaps.cpp`, line 9
+  - **Description:** Renders a visual layout of hotel floors. It organizes rooms by floor, draws a static ASCII art hallway for each, and then overlays colored boxes representing the rooms, complete with their number, type, and status.
+- **`drawParkingMap(...)`**
+  - **Location:** `RetroMaps.cpp`, line 80
+  - **Description:** Draws a schematic of the parking lot. It renders a static base map and then iterates through the parking spot data to draw a small, colored box for each spot, indicating its ID and availability.
+- **`drawRestaurantMap(...)`**
+  - **Location:** `RetroMaps.cpp`, line 126
+  - **Description:** Draws a static ASCII art layout of the restaurant. The implementation shows that it does not dynamically draw tables based on the input data; the tables are part of the static `mapBase` string.
+- **`drawEntranceMap()`**
+  - **Location:** `RetroMaps.cpp`, line 150
+  - **Description:** Draws a static, purely decorative ASCII art scene of the hotel's entrance.
+
+## File: RetroMedia.h
+
+This header file declares the functions and global variables for a simple background music player within the `RetroUI` framework.
+
+### Namespace: `RetroUI`
+
+- **Global Variables (Lines 8-12):** Declares `extern` variables to manage the state of the media player, including the `playlist`, the `currentSongIndex`, playback status flags (`isMusicPlaying`, `isMusicPaused`), and a UI focus tracker (`mediaButtonFocus`).
+- **`loadMusic()`**
+  - **Location:** `RetroMedia.h`, line 14
+  - **Description:** Declares a function to populate the playlist, likely by scanning a directory for music files.
+- **`playMusic()`**
+  - **Location:** `RetroMedia.h`, line 15
+  - **Description:** Declares the function to begin playback of the current song.
+- **`stopMusic()`**
+  - **Location:** `RetroMedia.h`, line 16
+  - **Description:** Declares the function to stop playback entirely.
+- **`togglePauseMusic()`**
+  - **Location:** `RetroMedia.h`, line 17
+  - **Description:** Declares a function to pause or resume the current song.
+- **`nextMusic()`**
+  - **Location:** `RetroMedia.h`, line 18
+  - **Description:** Declares a function to advance to the next track in the playlist.
+
+## File: RetroMedia.cpp
+
+This file implements the media player functions for the `RetroUI` library using the Windows MCI (Media Control Interface) API.
+
+### Namespace: `RetroUI`
+
+- **`#pragma comment(lib, "winmm.lib")` (Line 4):** A compiler directive to automatically link the required `winmm.lib` library for multimedia functions.
+- **Global Variable Definitions (Lines 7-11):** Defines and initializes the media player state variables.
+- **`loadMusic()`**
+  - **Location:** `RetroMedia.cpp`, line 13
+  - **Description:** Populates the `playlist` vector by searching for `.mp3` files, first in a "music/" directory and then in a "musics/" directory as a fallback. It uses the Windows `FindFirstFileA`/`FindNextFileA` API.
+- **`playMusic()`**
+  - **Location:** `RetroMedia.cpp`, line 31
+  - **Description:** Uses the `mciSendStringA` function to play a music file. It sends a string command to open the file and assign it an alias ("bgm"), then sends another command to play it.
+- **`stopMusic()`**
+  - **Location:** `RetroMedia.cpp`, line 41
+  - **Description:** Stops and closes the current audio file by sending a "close bgm" command via MCI.
+- **`togglePauseMusic()`**
+  - **Location:** `RetroMedia.cpp`, line 47
+  - **Description:** Sends either a "pause bgm" or "resume bgm" command to MCI depending on the current pause state.
+- **`nextMusic()`**
+  - **Location:** `RetroMedia.cpp`, line 52
+  - **Description:** Advances to the next song in the playlist by incrementing `currentSongIndex` (and looping if necessary), then stopping the current song and starting the next one.
+
+## File: RetroUI.h
+
+This is the main public-facing header for the UI library, bringing together the Core, Media, and Maps modules. It declares the high-level functions for building interactive application screens.
+
+### Namespace: `RetroUI`
+
+- **`drawTicker(int)`**
+  - **Location:** `RetroUI.h`, line 10
+  - **Description:** Draws the animated ticker at the bottom of the screen, which includes scrolling news, weather, and media controls.
+- **`drawBigClock(int, int)`**
+  - **Location:** `RetroUI.h`, line 11
+  - **Description:** Draws a large ASCII-art clock.
+- **`drawLayout(const std::string&, ...)`**
+  - **Location:** `RetroUI.h`, line 12
+  - **Description:** The main screen-drawing function. It creates the primary window layout with a content area and a sidebar.
+- **`drawWorld(int, int, int)`**
+  - **Location:** `RetroUI.h`, line 13
+  - **Description:** Renders the animated 3D "demoscene" graphic in the sidebar.
+- **`textInput(const std::string&, int)`**
+  - **Location:** `RetroUI.h`, line 14
+  - **Description:** Handles user text input with a label.
+- **`drawInfoBox(const std::vector<std::string>&)`**
+  - **Location:** `RetroUI.h`, line 15
+  - **Description:** Draws a simple, centered box for displaying messages.
+- **`drawModal(const std::string&, int)`**
+  - **Location:** `RetroUI.h`, line 16
+  - **Description:** Draws a modal dialog box for focused interactions.
+- **`drawTable(const std::vector<std::string>&)`**
+  - **Location:** `RetroUI.h`, line 17
+  - **Description:** Renders simple, line-by-line tabular data.
+- **`showMenu(...)`**
+  - **Location:** `RetroUI.h`, line 18
+  - **Description:** The primary interactive component for displaying a navigable menu and handling user input for selection and other actions.
+- **`showMapViewer(...)`**
+  - **Location:** `RetroUI.h`, line 19
+  - **Description:** An interactive screen for cycling through the various map views.
+
+## File: RetroUI.cpp
+
+This file contains the high-level implementation of the interactive `RetroUI` components, orchestrating the core, map, and media functions to build the user experience.
+
+### Namespace: `RetroUI`
+
+- **`drawTicker(int)`**
+  - **Location:** `RetroUI.cpp`, line 9
+  - **Description:** Implements the animated footer. It draws a multi-part box and populates it with a scrolling news feed, a weather update that changes based on time of day, and interactive media player controls.
+- **`drawBigClock(int, int)`**
+  - **Location:** `RetroUI.cpp`, line 71
+  - **Description:** Implements the large ASCII art clock by storing each digit as a multi-line string and printing the correct sequence of strings based on the current time.
+- **`drawLayout(...)`**
+  - **Location:** `RetroUI.cpp`, line 89
+  - **Description:** The master layout function. It draws the main window frames and then populates the sidebar with the big clock and a paginated grid of room statuses, including color-coding and type indicators.
+- **`drawWorld(...)`**
+  - **Location:** `RetroUI.cpp`, line 196
+  - **Description:** A purely cosmetic and highly advanced function that renders an animated 3D scene using character-based graphics. It performs 3D transformations and uses a z-buffer to correctly render rotating objects and a walking figure in ASCII art.
+- **`textInput(...)`**
+  - **Location:** `RetroUI.cpp`, line 245
+  - **Description:** Implements a basic text input field. It shows the cursor during input and hides it afterward.
+- **`drawInfoBox(...)` / `drawModal(...)`**
+  - **Location:** `RetroUI.cpp`, lines 252, 260
+  - **Description:** These functions draw bordered, centered boxes for displaying information or creating modal dialogs that overlay the current view.
+- **`showMenu(...)`**
+  - **Location:** `RetroUI.cpp`, line 275
+  - **Description:** The primary interactive event loop. It uses `WaitForSingleObject` and `ReadConsoleInput` to handle keyboard events in a non-blocking way, allowing for simultaneous animation and user interaction. It manages menu selection, highlighting, and input handling for arrow keys and the Enter key, routing actions to the menu, sidebar pagination, or media controls based on focus.
+- **`showMapViewer(...)`**
+  - **Location:** `RetroUI.cpp`, line 324
+  - **Description:** An event loop specifically for the map screen. It draws the appropriate map based on the `currentMap` index and handles left/right arrow key input to cycle through the different map views.
